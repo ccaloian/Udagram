@@ -32,6 +32,7 @@ Parameters:
 
 Resources:
 
+    ## VPC
     VPC:
         Type: AWS::EC2::VPC
         Properties:
@@ -41,6 +42,7 @@ Resources:
                 - Key: Name
                   Value: !Ref EnvironmentName
 
+    ## INTERNET GATEWAY
     InternetGateway:
         Type: AWS::EC2::InternetGateway
         Properties:
@@ -54,6 +56,7 @@ Resources:
             InternetGatewayId: !Ref InternetGateway
             VpcId: !Ref VPC
 
+    ## SUBNETS
     PublicSubnet1:
         Type: AWS::EC2::Subnet
         Properties: 
@@ -98,6 +101,7 @@ Resources:
                 - Key: Name
                   Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
 
+    ## NAT GATEWAYS
     # Make sure to allocate an Elastic IP (that will not change if the resource is destroyed)
     NatGateway1EIP:
         Type: AWS::EC2::EIP
@@ -126,3 +130,75 @@ Resources:
             AllocationId: !GetAtt NatGateway2EIP.AllocationId
             # NatGateways need to be deployed in a Pubic Subnet (to be accessible)
             SubnetId: !Ref PublicSubnet2
+
+    ## ROUTING
+    PublicRouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId: !Ref VPC
+            Tags:
+                - Key: Name
+                  Value: !Sub ${EnvironmentName} Public Routes
+
+    DefaultPublicRoute:
+        Type: AWS::EC2::Route
+        DependsOn: InternetGatewayAttachment
+        Properties:
+            RouteTableId: !Ref PublicRouteTable
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref InternetGateway
+
+    PublicSubnet1RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PublicRouteTable
+            SubnetId: !Ref PublicSubnet1
+
+    PublicSubnet2RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PublicRouteTable
+            SubnetId: !Ref PublicSubnet2
+
+    PrivateRouteTable1:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId: !Ref VPC
+            Tags:
+                - Key: Name
+                  Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+
+    DefaultPrivateRoute1:
+        Type: AWS::EC2::Route
+        Properties:
+            RouteTableId: !Ref PrivateRouteTable1
+            DestinationCidrBlock: 0.0.0.0/0
+            NatGatewayId: !Ref NatGateway1
+
+    PrivateSubnet1RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PrivateRouteTable1
+            SubnetId: !Ref PrivateSubnet1
+
+    # Create another RouteTable for the second private subnet (this is needed for future expansion)
+    PrivateRouteTable2:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId: !Ref VPC
+            Tags:
+                - Key: Name
+                  Value: !Sub ${EnvironmentName} Private Routes (AZ2)
+
+    DefaultPrivateRoute2:
+        Type: AWS::EC2::Route
+        Properties:
+            RouteTableId: !Ref PrivateRouteTable2
+            DestinationCidrBlock: 0.0.0.0/0
+            NatGatewayId: !Ref NatGateway2
+
+    PrivateSubnet2RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PrivateRouteTable2
+            SubnetId: !Ref PrivateSubnet2
