@@ -59,7 +59,7 @@ Resources:
                     apt-get install apache2 -y
                     systemctl start apache2.service
                     cd /var/www/html
-                    echo "Udacity Demo Web Server Up and Running!" > index.html
+                    echo "It works! Udagram, Udacity!" > index.html
             ImageId: ami-07a29e5e945228fa1 #Ubuntu Server 18.04 LTS (HVM), SSD Volume Type
             # NOTE: for troubleshooting connect from the jumpbox in public subnet
             # TODO: remove after troubleshooting
@@ -82,7 +82,7 @@ Resources:
                 Ref: WebAppLaunchConfig
             MinSize: '2'
             MaxSize: '8'
-            DesiredCapacity: '2'
+            DesiredCapacity: '4'
             TargetGroupARNs:
                 - Ref: WebAppTargetGroup
 
@@ -132,3 +132,12 @@ Resources:
             VpcId:
                 Fn::ImportValue:
                     Fn::Sub: ${EnvironmentName}-VPCID
+
+# Create outputs for convenience
+Outputs:
+
+    PublicURL:
+        Description: Public URL for convenience
+        Value: !Join ["", ["http://", !GetAtt WebAppLB.DNSName]]
+        Export:
+            Name: UdagramPublicURL
