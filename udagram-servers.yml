@@ -59,7 +59,7 @@ Resources:
                     apt-get install apache2 -y
                     systemctl start apache2.service
                     cd /var/www/html
-                    echo Udacity Demo Web Server Up and Running!" > index.html
+                    echo "Udacity Demo Web Server Up and Running!" > index.html
             ImageId: ami-07a29e5e945228fa1 #Ubuntu Server 18.04 LTS (HVM), SSD Volume Type
             # NOTE: for troubleshooting connect from the jumpbox in public subnet
             # TODO: remove after troubleshooting
@@ -83,5 +83,52 @@ Resources:
             MinSize: '2'
             MaxSize: '8'
             DesiredCapacity: '2'
-            #TargetGroupARNs:
-            #    - Ref: WebAppTargetGroup
+            TargetGroupARNs:
+                - Ref: WebAppTargetGroup
+
+    ## LOAD BALANCER
+    WebAppLB:
+        Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+        Properties:
+            Subnets:
+                - Fn::ImportValue: !Sub ${EnvironmentName}-PUB1-SN
+                - Fn::ImportValue: !Sub ${EnvironmentName}-PUB2-SN
+            SecurityGroups:
+                - Ref: LBSecGroup
+
+    Listener:
+        Type: AWS::ElasticLoadBalancingV2::Listener
+        Properties:
+            DefaultActions:
+                - Type: forward
+                  TargetGroupArn: !Ref WebAppTargetGroup
+            LoadBalancerArn: !Ref WebAppLB
+            Port: 80
+            Protocol: HTTP
+
+    ALBListenerRule:
+        Type: AWS::ElasticLoadBalancingV2::ListenerRule
+        Properties:
+            Actions:
+                - Type: forward
+                  TargetGroupArn: !Ref WebAppTargetGroup
+            Conditions:
+                - Field: path-pattern
+                  Values: [/]
+            ListenerArn: !Ref Listener
+            Priority: 1
+
+    WebAppTargetGroup:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        Properties:
+            HealthCheckIntervalSeconds: 10
+            HealthCheckPath: /
+            HealthCheckProtocol: HTTP
+            HealthCheckTimeoutSeconds: 8
+            HealthyThresholdCount: 2
+            UnhealthyThresholdCount: 5
+            Port: 80
+            Protocol: HTTP
+            VpcId:
+                Fn::ImportValue:
+                    Fn::Sub: ${EnvironmentName}-VPCID
