@@ -32,3 +32,8 @@ The project contains the following components:
   * Target Group with Health Checks
   * Bation Host
   * Outputs
+
+## References
+
+I got some inspiration for adding a Bastion Host server from here:
+* https://github.com/shekodn/bastion-poc
