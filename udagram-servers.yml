@@ -57,18 +57,17 @@ Resources:
                   CidrIp: 0.0.0.0/0
                 # NOTE: for troubleshooting purposes open port 22 for SSH from anywhere
                 # TODO: remove when done troubleshooting
-                - IpProtocol: tcp
-                  FromPort: 22
-                  ToPort: 22
-                  #CidrIp: 0.0.0.0/0
-                  SourceSecurityGroupId: !Ref BastionHostSecurityGroup
+                #- IpProtocol: tcp
+                #  FromPort: 22
+                #  ToPort: 22
+                #  SourceSecurityGroupId: !Ref BastionHostSecGroup
             SecurityGroupEgress:
                 - IpProtocol: tcp
                   FromPort: 0
                   ToPort: 65535
                   CidrIp: 0.0.0.0/0
 
-    BastionHostSecurityGroup:
+    BastionHostSecGroup:
         Type: AWS::EC2::SecurityGroup
         Properties:
             GroupDescription: Security Groupt for troubleshooting using a bastion host 
@@ -105,7 +104,7 @@ Resources:
             ImageId: !Sub ${UbuntuImageId} #Ubuntu Server 18.04 LTS (HVM), SSD Volume Type
             # NOTE: for troubleshooting connect from the jumpbox in public subnet
             # TODO: remove after troubleshooting
-            KeyName: !Sub ${PrivateServerKey}
+            # KeyName: !Sub ${PrivateServerKey}
             IamInstanceProfile: !Ref WebAppInstanceProfile
             SecurityGroups:
                 - Ref: WebServerSecGroup
@@ -188,7 +187,7 @@ Resources:
                 Fn::ImportValue: 
                     Fn::Sub: ${EnvironmentName}-PUB1-SN
             SecurityGroupIds:
-                - Ref: BastionHostSecurityGroup
+                - Ref: BastionHostSecGroup
             Tags:
                 - Key: Name
                   Value: !Sub ${EnvironmentName}-BastionHost
