@@ -4,7 +4,7 @@ Parameters:
         Type: String
 
     UbuntuImageId:
-        Description: Ubuntu 18.04 image id
+        Description: Ubuntu Server 18.04 LTS (HVM), SSD Volume Type
         Type: String
 
     BastionHostKey:
@@ -55,8 +55,7 @@ Resources:
                   FromPort: 80
                   ToPort: 80
                   CidrIp: 0.0.0.0/0
-                # NOTE: for troubleshooting purposes open port 22 for SSH from anywhere
-                # TODO: remove when done troubleshooting
+                # TROUBLESHOOTING: uncomment to open port 22 for SSH from the Bastion Host
                 #- IpProtocol: tcp
                 #  FromPort: 22
                 #  ToPort: 22
@@ -101,10 +100,9 @@ Resources:
                     systemctl start apache2.service
                     cd /var/www/html
                     echo "It works! Udagram, Udacity!" > index.html
-            ImageId: !Sub ${UbuntuImageId} #Ubuntu Server 18.04 LTS (HVM), SSD Volume Type
-            # NOTE: for troubleshooting connect from the jumpbox in public subnet
-            # TODO: remove after troubleshooting
-            # KeyName: !Sub ${PrivateServerKey}
+            ImageId: !Sub ${UbuntuImageId}
+            # TROUBLESHOOTING: uncomment to allow access on SSH on port 22 from the Bastion Host using private key
+            #KeyName: !Sub ${PrivateServerKey}
             IamInstanceProfile: !Ref WebAppInstanceProfile
             SecurityGroups:
                 - Ref: WebServerSecGroup
