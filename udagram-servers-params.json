@@ -2,5 +2,17 @@
 	{
 		"ParameterKey": "EnvironmentName",
 		"ParameterValue": "Udagram"
+    },
+    {
+		"ParameterKey": "UbuntuImageId",
+		"ParameterValue": "ami-07a29e5e945228fa1"
+    },
+    {
+		"ParameterKey": "BastionHostKey",
+		"ParameterValue": "jumpbox-key"
+    },
+    {
+		"ParameterKey": "PrivateServerKey",
+		"ParameterValue": "private-server-devops-key"
     }
 ]

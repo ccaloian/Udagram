@@ -3,7 +3,26 @@ Parameters:
         Description: The Environment Name (will be prefixed to resource names)
         Type: String
 
+    UbuntuImageId:
+        Description: Ubuntu 18.04 image id
+        Type: String
+
+    BastionHostKey:
+        Description: Key to access bastion host
+        Type: String
+
+    PrivateServerKey:
+        Description: Key to access servers in private subnets from bastion host
+        Type: String
+
 Resources:
+
+    ## IAM PROFILE WITH ROLES
+    WebAppInstanceProfile:
+        Type: AWS::IAM::InstanceProfile
+        Properties:
+            Roles:
+                - UdagramS3ReadOnly
 
     ## SECURITY GROUPS
     LBSecGroup:
@@ -41,6 +60,29 @@ Resources:
                 - IpProtocol: tcp
                   FromPort: 22
                   ToPort: 22
+                  #CidrIp: 0.0.0.0/0
+                  SourceSecurityGroupId: !Ref BastionHostSecurityGroup
+            SecurityGroupEgress:
+                - IpProtocol: tcp
+                  FromPort: 0
+                  ToPort: 65535
+                  CidrIp: 0.0.0.0/0
+
+    BastionHostSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupDescription: Security Groupt for troubleshooting using a bastion host 
+            VpcId:
+                Fn::ImportValue:
+                    Fn::Sub: ${EnvironmentName}-VPCID
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: 22
+                  ToPort: 22
+                  CidrIp: 0.0.0.0/0
+                - IpProtocol: tcp
+                  FromPort: 80
+                  ToPort: 80
                   CidrIp: 0.0.0.0/0
             SecurityGroupEgress:
                 - IpProtocol: tcp
@@ -60,13 +102,14 @@ Resources:
                     systemctl start apache2.service
                     cd /var/www/html
                     echo "It works! Udagram, Udacity!" > index.html
-            ImageId: ami-07a29e5e945228fa1 #Ubuntu Server 18.04 LTS (HVM), SSD Volume Type
+            ImageId: !Sub ${UbuntuImageId} #Ubuntu Server 18.04 LTS (HVM), SSD Volume Type
             # NOTE: for troubleshooting connect from the jumpbox in public subnet
             # TODO: remove after troubleshooting
-            KeyName: private-server-devops-key
+            KeyName: !Sub ${PrivateServerKey}
+            IamInstanceProfile: !Ref WebAppInstanceProfile
             SecurityGroups:
                 - Ref: WebServerSecGroup
-            InstanceType: t2.medium
+            InstanceType: t3.medium
             BlockDeviceMappings:
                 - DeviceName: "/dev/sdk"
                   Ebs: 
@@ -133,6 +176,24 @@ Resources:
                 Fn::ImportValue:
                     Fn::Sub: ${EnvironmentName}-VPCID
 
+    BastionHostServer:
+        Description: Bastion Host for troubleshooting private servers
+        Type: AWS::EC2::Instance
+        Properties:
+            IamInstanceProfile: !Ref WebAppInstanceProfile
+            ImageId: !Sub ${UbuntuImageId}
+            InstanceType: t2.micro
+            KeyName: !Sub ${BastionHostKey}
+            SubnetId: 
+                Fn::ImportValue: 
+                    Fn::Sub: ${EnvironmentName}-PUB1-SN
+            SecurityGroupIds:
+                - Ref: BastionHostSecurityGroup
+            Tags:
+                - Key: Name
+                  Value: !Sub ${EnvironmentName}-BastionHost
+
+
 # Create outputs for convenience
 Outputs:
 
@@ -140,4 +201,10 @@ Outputs:
         Description: Public URL for convenience
         Value: !Join ["", ["http://", !GetAtt WebAppLB.DNSName]]
         Export:
-            Name: UdagramPublicURL
+            Name: !Sub ${EnvironmentName}-PUBL-URL
+
+    BastionHostPublicIp:
+        Description: Public IP for the Bastion Host
+        Value: !GetAtt BastionHostServer.PublicIp
+        Export:
+            Name: !Sub ${EnvironmentName}-BastionHost-PublicIP
