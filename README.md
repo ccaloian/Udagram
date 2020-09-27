@@ -1,6 +1,6 @@
 # Udagram 
 
-A high-availability Instagram-like app network infrastructure and servers using CloudFormation.
+A high-availability web app network infrastructure and servers using CloudFormation.
 
 > The latest deployed version of the app is [here](http://udagr-webap-nq25dp9ned3z-2094158975.us-west-2.elb.amazonaws.com/).
 
